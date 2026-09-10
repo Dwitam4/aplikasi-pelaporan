@@ -23,6 +23,7 @@ import {
   Phone, 
   MapPin, 
   Navigation, 
+  FileText,
   AlertCircle,
   ExternalLink,
   Filter,
@@ -31,13 +32,14 @@ import {
 } from 'lucide-react';
 import { UnassignedPassenger, ReportDocument } from '../types';
 import { DatePickerInput } from './DatePickerInput';
+import { DateSelectionBar } from './DateSelectionBar';
 import { 
   formatIndonesianDate, 
   parseIndonesianDate,
   INDONESIAN_DAYS_SHORT,
   INDONESIAN_MONTHS
 } from '../utils/date';
-import { getFilledRows } from '../utils/spreadsheet';
+import { getFilledRows, defaultJadwalList } from '../utils/spreadsheet';
 
 interface UnassignedPassengerPoolProps {
   unassignedPassengers: UnassignedPassenger[];
@@ -764,186 +766,67 @@ export const UnassignedPassengerPool: React.FC<UnassignedPassengerPoolProps> = (
         </div>
       )}
 
-      {/* Modal Edit Penumpang Antrean */}
+      {/* Modal Edit Penumpang Antrean — fields aligned with Add Passenger to Queue */}
       {editingPassenger && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                  <Pencil className="w-4 h-4" />
-                </div>
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold"><Pencil className="w-4 h-4" /></div>
                 <div>
                   <h3 className="font-bold text-base text-slate-900">Edit Antrean Penumpang</h3>
-                  <p className="text-xs text-slate-500">Perbarui data nama, jam, tanggal, atau rute penjemputan</p>
+                  <p className="text-xs text-slate-500">Isian disamakan dengan form tambah penumpang ke antrean.</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setEditingPassenger(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <button type="button" onClick={() => setEditingPassenger(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X className="w-4 h-4" /></button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (editingPassenger && onEditUnassigned) {
-                  onEditUnassigned(editingPassenger);
-                }
-                setEditingPassenger(null);
-              }}
-              className="space-y-3.5"
-            >
-              {/* Nama & HP */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Nama Penumpang <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingPassenger.nama}
-                    onChange={(e) => setEditingPassenger({ ...editingPassenger, nama: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-semibold text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                  />
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (editingPassenger.nama.trim() && onEditUnassigned) onEditUnassigned({ ...editingPassenger, nama: editingPassenger.nama.trim(), jam: editingPassenger.jam?.trim() || '05:30' });
+              setEditingPassenger(null);
+            }} className="space-y-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2">
+                <DateSelectionBar value={editingPassenger.tanggal || formatIndonesianDate(new Date())} onChange={(d) => setEditingPassenger({ ...editingPassenger, tanggal: d })} label="1. TANGGAL OPERASIONAL PENUMPANG *" accent="amber" />
+              </div>
+
+              <div className="bg-purple-50/60 border border-purple-200 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-purple-950 flex items-center gap-1.5 uppercase tracking-wider"><Clock className="w-4 h-4 text-purple-600" /><span>2. Jam Dijemput Penumpang *</span></label>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-200/70 text-purple-900">{editingPassenger.jam || '05:30'} WIB</span>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Nomor WhatsApp / HP
-                  </label>
-                  <input
-                    type="text"
-                    value={editingPassenger.hp || ''}
-                    onChange={(e) => setEditingPassenger({ ...editingPassenger, hp: e.target.value })}
-                    placeholder="Contoh: 08123456789"
-                    className="w-full px-3 py-2 text-xs font-mono font-semibold text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                  />
+                <p className="text-[11px] text-purple-900/80">Pilih jadwal operasional atau ketik jam penjemputan spesifik:</p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  {defaultJadwalList.map((timeStr) => (
+                    <button key={timeStr} type="button" onClick={() => setEditingPassenger({ ...editingPassenger, jam: timeStr })} className={`py-2 px-1 rounded-xl text-xs font-mono font-bold transition-all border ${(editingPassenger.jam || '') === timeStr ? 'bg-purple-600 text-white border-purple-700 shadow-xs ring-2 ring-purple-300' : 'bg-white hover:bg-purple-100/50 text-slate-700 border-slate-200 hover:border-purple-300'}`}>{timeStr}</button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-1"><span className="text-[11px] text-purple-800 font-medium whitespace-nowrap">Jam Custom:</span><input type="time" value={editingPassenger.jam || '05:30'} onChange={(e) => setEditingPassenger({ ...editingPassenger, jam: e.target.value })} className="px-3 py-1.5 text-xs font-mono font-bold bg-white border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-slate-900" /></div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider"><span>3. Jenis Perjalanan *</span></label>
+                <p className="text-[11px] text-slate-500">Pilih arah perjalanan penumpang:</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button type="button" onClick={() => setEditingPassenger({ ...editingPassenger, tripType: 'keberangkatan', antar: editingPassenger.antar || 'Stasiun' })} className={`p-3 rounded-2xl border-2 text-left transition-all flex items-start gap-2.5 ${(editingPassenger.tripType || 'keberangkatan') === 'keberangkatan' ? 'border-sky-500 bg-sky-50/80 text-sky-950 shadow-sm ring-1 ring-sky-300' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}`}><div className={`p-2 rounded-xl shrink-0 ${(editingPassenger.tripType || 'keberangkatan') === 'keberangkatan' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'}`}><PlaneTakeoff className="w-4 h-4" /></div><div><div className="font-bold text-xs sm:text-sm">🛫 Keberangkatan</div><div className="text-[11px] text-slate-500 mt-0.5">Antar ke Stasiun (tetap bisa diedit)</div></div></button>
+                  <button type="button" onClick={() => setEditingPassenger({ ...editingPassenger, tripType: 'kedatangan', jemput: editingPassenger.jemput || 'Stasiun' })} className={`p-3 rounded-2xl border-2 text-left transition-all flex items-start gap-2.5 ${editingPassenger.tripType === 'kedatangan' ? 'border-indigo-500 bg-indigo-50/80 text-indigo-950 shadow-sm ring-1 ring-indigo-300' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}`}><div className={`p-2 rounded-xl shrink-0 ${editingPassenger.tripType === 'kedatangan' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}><PlaneLanding className="w-4 h-4" /></div><div><div className="font-bold text-xs sm:text-sm">🛬 Kedatangan</div><div className="text-[11px] text-slate-500 mt-0.5">Jemput dari Stasiun (tetap bisa diedit)</div></div></button>
                 </div>
               </div>
 
-              {/* Tanggal & Jam */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Tanggal Operasional
-                  </label>
-                  <DatePickerInput
-                    value={editingPassenger.tanggal || ''}
-                    onChange={(d) => setEditingPassenger({ ...editingPassenger, tanggal: d })}
-                    label=""
-                    className="w-full"
-                  />
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
+                <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5"><User className="w-4 h-4 text-indigo-600" /><span>4. Data Kontak & Pemesan</span></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><label className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1">Nama Pemesan / Kontak:<span className="text-red-500">*</span></label><input type="text" required value={editingPassenger.nama} onChange={(e) => setEditingPassenger({ ...editingPassenger, nama: e.target.value })} placeholder="Contoh: Pak Budi Santoso" className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900" /></div>
+                  <div><label className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5 text-emerald-600" />No. HP / WhatsApp Pemesan:</label><input type="text" value={editingPassenger.hp || ''} onChange={(e) => setEditingPassenger({ ...editingPassenger, hp: e.target.value })} placeholder="Contoh: 08123456789" className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono text-slate-900" /></div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Jam Operasional / Penjemputan
-                  </label>
-                  <input
-                    type="text"
-                    value={editingPassenger.jam || ''}
-                    onChange={(e) => setEditingPassenger({ ...editingPassenger, jam: e.target.value })}
-                    placeholder="Contoh: 05:30"
-                    className="w-full px-3 py-2 text-xs font-mono font-semibold text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div><label className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-indigo-600" />Titik Jemput:</label><input type="text" value={editingPassenger.jemput || ''} onChange={(e) => setEditingPassenger({ ...editingPassenger, jemput: e.target.value })} placeholder="Lokasi penjemputan..." className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /><div className="flex flex-wrap gap-1 mt-1.5">{['Stasiun'].map((j) => <button key={j} type="button" onClick={() => setEditingPassenger({ ...editingPassenger, jemput: j })} className="text-[10px] px-2 py-0.5 rounded-md border bg-white border-slate-200 hover:bg-indigo-50 text-slate-700">{j}</button>)}</div></div>
+                  <div><label className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1"><Navigation className="w-3.5 h-3.5 text-emerald-600" />Titik Antar:</label><input type="text" value={editingPassenger.antar || ''} onChange={(e) => setEditingPassenger({ ...editingPassenger, antar: e.target.value })} placeholder="Tujuan pengantaran..." className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /><div className="flex flex-wrap gap-1 mt-1.5">{['Stasiun'].map((a) => <button key={a} type="button" onClick={() => setEditingPassenger({ ...editingPassenger, antar: a })} className="text-[10px] px-2 py-0.5 rounded-md border bg-white border-slate-200 hover:bg-emerald-50 text-slate-700">{a}</button>)}</div></div>
                 </div>
+                <div><label className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1"><FileText className="w-3.5 h-3.5 text-slate-500" />Keterangan / Catatan Khusus:</label><input type="text" value={editingPassenger.keterangan || ''} onChange={(e) => setEditingPassenger({ ...editingPassenger, keterangan: e.target.value })} placeholder="Bawa koper, titip barang, dll." className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium" /></div>
               </div>
 
-              {/* Trip Type: Keberangkatan vs Kedatangan */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Arah Perjalanan
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingPassenger({ ...editingPassenger, tripType: 'keberangkatan' })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
-                      (editingPassenger.tripType || 'keberangkatan') === 'keberangkatan'
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <PlaneTakeoff className="w-3.5 h-3.5" />
-                    <span>Keberangkatan (Antar)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingPassenger({ ...editingPassenger, tripType: 'kedatangan' })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
-                      editingPassenger.tripType === 'kedatangan'
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <PlaneLanding className="w-3.5 h-3.5" />
-                    <span>Kedatangan (Jemput)</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Jemput & Antar */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Titik Jemput
-                  </label>
-                  <input
-                    type="text"
-                    value={editingPassenger.jemput || ''}
-                    onChange={(e) => setEditingPassenger({ ...editingPassenger, jemput: e.target.value })}
-                    placeholder="Alamat penjemputan"
-                    className="w-full px-3 py-2 text-xs font-medium text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Titik Antar
-                  </label>
-                  <input
-                    type="text"
-                    value={editingPassenger.antar || ''}
-                    onChange={(e) => setEditingPassenger({ ...editingPassenger, antar: e.target.value })}
-                    placeholder="Tujuan pengantaran"
-                    className="w-full px-3 py-2 text-xs font-medium text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* Keterangan */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Keterangan / Catatan Khusus
-                </label>
-                <input
-                  type="text"
-                  value={editingPassenger.keterangan || ''}
-                  onChange={(e) => setEditingPassenger({ ...editingPassenger, keterangan: e.target.value })}
-                  placeholder="Bawa koper, titip barang, dll."
-                  className="w-full px-3 py-2 text-xs font-medium text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              {/* Footer Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingPassenger(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Simpan Perubahan</span>
-                </button>
-              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100"><button type="button" onClick={() => setEditingPassenger(null)} className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100">Batal</button><button type="submit" className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors"><Save className="w-3.5 h-3.5" /><span>Simpan Perubahan</span></button></div>
             </form>
           </div>
         </div>
