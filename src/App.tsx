@@ -903,12 +903,28 @@ export default function App() {
     }
   };
 
-  // Delete passenger
+  // Remove from a driver manifest and return the passenger to the manual assignment queue.
+  // Permanent deletion is only available from the queue via handleDeleteUnassigned.
   const handleDeletePassenger = (passengerId: string) => {
+    const passenger = currentReport.rows.find((r) => r.id === passengerId);
+    if (!passenger || (!(passenger.nama || '').trim() && !(passenger.hp || '').trim())) return;
     const updated = currentReport.rows.filter((r) => r.id !== passengerId);
     const renumbered = updated.map((r, i) => ({ ...r, no: i + 1 }));
     handleUpdateRows(renumbered);
-    showToast('Penumpang berhasil dihapus.');
+    const queued: UnassignedPassenger = {
+      ...passenger,
+      id: `unassigned-${passenger.id}-${Date.now()}`,
+      no: 0,
+      tanggal: currentReport.tanggal || formatIndonesianDate(new Date()),
+      jam: passenger.jam || currentReport.jamMulai || '05:30',
+      createdAt: new Date().toISOString(),
+    };
+    setUnassignedPassengers((prev) => {
+      const next = [queued, ...prev];
+      saveUnassignedPassengersToDatabase(next).catch(console.error);
+      return next;
+    });
+    showToast(`Penumpang "${passenger.nama || passenger.hp}" dikembalikan ke Antrean Penumpang.`);
   };
 
   // Delete report/fleet
@@ -1160,6 +1176,7 @@ export default function App() {
         <SpreadsheetGrid
           rows={currentReport.rows}
           onChangeRows={handleUpdateRows}
+          onDeletePassenger={(row) => handleDeletePassenger(row.id)}
           onQuickAddRow={handleQuickAddRow}
           onOpenAddPassengerModal={() => setIsAddPassengerOpen(true)}
           onOpenEditPassengerModal={(row) => {
