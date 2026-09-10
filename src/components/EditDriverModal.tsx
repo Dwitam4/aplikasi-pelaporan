@@ -19,7 +19,7 @@ import {
 import { ReportDocument, MasterPresets } from '../types';
 import { DatePickerInput } from './DatePickerInput';
 import { DateSelectionBar } from './DateSelectionBar';
-import { getFilledRows, defaultMasterDrivers, defaultMasterVehicles } from '../utils/spreadsheet';
+import { getFilledRows, defaultMasterDrivers, defaultMasterVehicles, defaultJadwalList } from '../utils/spreadsheet';
 import { 
   detectShiftType, 
   getDriverShiftsOnDate, 
@@ -60,6 +60,10 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
   const vehicles = masterPresets.vehicles && masterPresets.vehicles.length > 0
     ? masterPresets.vehicles
     : defaultMasterVehicles;
+
+  const operationalSchedules = masterPresets.jadwalList && masterPresets.jadwalList.length > 0
+    ? masterPresets.jadwalList
+    : defaultJadwalList;
 
   const [driver, setDriver] = useState(report.driver || '');
   const [driverHp, setDriverHp] = useState(report.driverHp || '');
@@ -149,10 +153,12 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
     if (errorMsg) setErrorMsg('');
   };
 
-  const handleApplyShiftPreset = (preset: typeof SHIFT_PRESET_BUTTONS[0]) => {
-    setJamMulai(preset.jamMulai);
-    setJamSelesai(preset.jamSelesai);
-    setCatatanHeader(SHIFT_DEFINITIONS[preset.type].label);
+  const handleApplyOperationalTime = (startTime: string) => {
+    setJamMulai(startTime);
+    const [h, m] = startTime.split(':').map(Number);
+    const endH = (h + 3) % 24;
+    setJamSelesai(`${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`);
+    setCatatanHeader(`Jadwal ${startTime} WIB`);
     if (errorMsg) setErrorMsg('');
   };
 
@@ -329,35 +335,30 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
                   <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Shift & Jam Tugas</span>
+                  <span>Jam Operasional & Jam Tugas</span>
                 </label>
                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${SHIFT_DEFINITIONS[currentShiftType].badgeClass}`}>
                   {SHIFT_DEFINITIONS[currentShiftType].shortName}
                 </span>
               </div>
 
-              {/* Shift Presets Grid */}
+              {/* Jam Operasional dari Master Data */}
               <div className="grid grid-cols-3 gap-1.5">
-                {SHIFT_PRESET_BUTTONS.map((preset) => {
-                  const Icon = preset.icon;
-                  const isSelected = currentShiftType === preset.type;
+                {operationalSchedules.map((schedule) => {
+                  const isSelected = jamMulai === schedule;
                   return (
                     <button
-                      key={preset.label}
+                      key={schedule}
                       type="button"
-                      onClick={() => handleApplyShiftPreset(preset)}
+                      onClick={() => handleApplyOperationalTime(schedule)}
                       className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border ${
                         isSelected
-                          ? preset.type === 'pagi'
-                            ? 'bg-amber-500 text-white border-amber-600'
-                            : preset.type === 'siang'
-                            ? 'bg-blue-600 text-white border-blue-700'
-                            : 'bg-indigo-600 text-white border-indigo-700'
-                          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                          ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                          : 'bg-white hover:bg-indigo-50 text-slate-700 border-slate-200'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{preset.label.split(' ')[0]}</span>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{schedule} WIB</span>
                     </button>
                   );
                 })}
