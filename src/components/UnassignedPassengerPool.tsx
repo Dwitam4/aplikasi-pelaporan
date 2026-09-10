@@ -44,7 +44,6 @@ interface UnassignedPassengerPoolProps {
   reports: ReportDocument[];
   currentDate: string;
   onAssignToDriver: (passengerId: string, targetReportId: string, assignWholeGroup?: boolean) => void;
-  onAutoAssignAll: () => void;
   onDeleteUnassigned: (passengerId: string) => void;
   onEditUnassigned?: (updated: UnassignedPassenger) => void;
   onOpenAddDriver: (date: string, jam?: string) => void;
@@ -57,7 +56,6 @@ export const UnassignedPassengerPool: React.FC<UnassignedPassengerPoolProps> = (
   reports,
   currentDate,
   onAssignToDriver,
-  onAutoAssignAll,
   onDeleteUnassigned,
   onEditUnassigned,
   onOpenAddDriver,
@@ -201,7 +199,7 @@ export const UnassignedPassengerPool: React.FC<UnassignedPassengerPoolProps> = (
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Pilih tanggal di kalender untuk melihat antrean penumpang per hari. Penumpang dapat dientri terlebih dahulu sebelum ditentukan armadanya.
+              Pilih tanggal di kalender untuk melihat antrean penumpang per hari. Penumpang hanya masuk ke driver dan jam yang Anda pilih secara manual.
             </p>
           </div>
           <button 
@@ -244,19 +242,6 @@ export const UnassignedPassengerPool: React.FC<UnassignedPassengerPoolProps> = (
               Semua ({countTotal})
             </button>
           </div>
-
-          {/* Auto Assign All Button (Active if there are queued passengers) */}
-          {countTotal > 0 && (
-            <button
-              type="button"
-              onClick={onAutoAssignAll}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all"
-              title="Otomatis masukkan penumpang ke driver dengan jadwal & tanggal yang sesuai"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Tugaskan Otomatis</span>
-            </button>
-          )}
 
           {/* Add Passenger Directly to Queue */}
           <button
