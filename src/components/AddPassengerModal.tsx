@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ReportDocument, MasterPresets, ReportRow, TripType } from '../types';
 import { DatePickerInput } from './DatePickerInput';
+import { DateSelectionBar } from './DateSelectionBar';
 import { formatIndonesianDate } from '../utils/date';
 import { getFilledRows, defaultJadwalList } from '../utils/spreadsheet';
 
@@ -106,7 +107,7 @@ export const AddPassengerModal: React.FC<AddPassengerModalProps> = ({
   const [isDetailNamesOpen, setIsDetailNamesOpen] = useState<boolean>(true);
 
   // Driver Assignment Mode: 'queue' (Entry dulu, pilih driver nanti) | 'auto' (Otomatis) | 'manual' (Pilih driver)
-  const [assignmentMode, setAssignmentMode] = useState<'queue' | 'auto' | 'manual'>('auto');
+  const [assignmentMode, setAssignmentMode] = useState<'queue' | 'auto' | 'manual'>('queue');
   const [selectedReportId, setSelectedReportId] = useState<string>('');
 
   // Available drivers on chosen date
@@ -219,9 +220,9 @@ export const AddPassengerModal: React.FC<AddPassengerModalProps> = ({
         setAssignmentMode(initialMode);
       } else if (currentReport) {
         setSelectedReportId(currentReport.id);
-        setAssignmentMode('auto');
+        setAssignmentMode('manual');
       } else {
-        setAssignmentMode('auto');
+        setAssignmentMode('queue');
       }
     }
   }, [isOpen, currentReport, initialDate, initialJam, initialMode]);
@@ -391,10 +392,11 @@ export const AddPassengerModal: React.FC<AddPassengerModalProps> = ({
           
           {/* 1. Tanggal Operasional */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2">
-            <DatePickerInput
+            <DateSelectionBar
               value={tanggal}
-              onChange={(newDate) => setTanggal(newDate)}
+              onChange={setTanggal}
               label="1. TANGGAL OPERASIONAL PENUMPANG *"
+              accent="amber"
             />
           </div>
 

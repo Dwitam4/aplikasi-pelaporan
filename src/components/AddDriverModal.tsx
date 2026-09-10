@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { MasterPresets, MasterDriver, MasterVehicle, ReportDocument } from '../types';
 import { DatePickerInput } from './DatePickerInput';
+import { DateSelectionBar } from './DateSelectionBar';
 import { formatIndonesianDate } from '../utils/date';
 import { defaultMasterDrivers, defaultMasterVehicles, defaultJadwalList } from '../utils/spreadsheet';
 import { 
@@ -89,7 +90,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [showCustomVehicle, setShowCustomVehicle] = useState(false);
-  const [namaKereta, setNamaKereta] = useState<string>(() => masterPresets.keretaList[0] || 'BIB/RGA');
+  const [namaKereta, setNamaKereta] = useState<string>('');
   const [jamMulai, setJamMulai] = useState<string>(() => initialJam || '05:30');
   const [jamSelesai, setJamSelesai] = useState<string>('08:30');
   const [catatanHeader, setCatatanHeader] = useState<string>(() => `Jadwal ${initialJam || '05:30'} WIB`);
@@ -115,6 +116,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
       setIsQuickAddDriver(false);
       setIsQuickAddVehicle(false);
       setShowCustomVehicle(false);
+      setNamaKereta('');
 
       const targetJam = initialJam || operationalSchedules[0] || '05:30';
       setJamMulai(targetJam);
@@ -277,7 +279,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
       platNomor: finalPlatNomor,
       vehicleId: finalVehicleId,
       kapasitas: finalKapasitas,
-      namaKereta: namaKereta.trim() || 'BIB/RGA',
+      namaKereta: namaKereta.trim(),
       tanggal: tanggal.trim(),
       jamMulai: jamMulai.trim() || '05:00',
       jamSelesai: jamSelesai.trim() || '12:00',
@@ -324,13 +326,14 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
 
           {/* 1. Tanggal Penugasan */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5">
-            <DatePickerInput
+            <DateSelectionBar
               value={tanggal}
               onChange={(newDate) => {
                 setTanggal(newDate);
                 if (errorMsg) setErrorMsg('');
               }}
               label="1. TANGGAL PENUGASAN OPERASIONAL *"
+              accent="indigo"
             />
             {existingReportsOnDate.length > 0 && (
               <p className="text-[11px] text-indigo-700 font-medium px-1 flex items-center gap-1">
@@ -637,24 +640,6 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({
               <Train className="w-3.5 h-3.5 text-blue-600" />
               <span>5. Nama Kereta / Rute</span>
             </label>
-
-            {/* Quick chips */}
-            <div className="flex flex-wrap gap-1.5 mb-1.5">
-              {masterPresets.keretaList.map((kereta) => (
-                <button
-                  key={kereta}
-                  type="button"
-                  onClick={() => setNamaKereta(kereta)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border ${
-                    namaKereta.toLowerCase() === kereta.toLowerCase()
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                  }`}
-                >
-                  {kereta}
-                </button>
-              ))}
-            </div>
 
             <input
               type="text"

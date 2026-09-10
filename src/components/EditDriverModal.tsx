@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ReportDocument, MasterPresets } from '../types';
 import { DatePickerInput } from './DatePickerInput';
+import { DateSelectionBar } from './DateSelectionBar';
 import { getFilledRows, defaultMasterDrivers, defaultMasterVehicles } from '../utils/spreadsheet';
 import { 
   detectShiftType, 
@@ -178,14 +179,14 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
       platNomor: finalPlatNomor,
       vehicleId: vehicleId || undefined,
       kapasitas: Number(kapasitas) || 7,
-      namaKereta: namaKereta.trim() || 'BIB/RGA',
+      namaKereta: namaKereta.trim(),
       tanggal: tanggal.trim(),
       jamMulai: jamMulai.trim() || '05:00',
       jamSelesai: jamSelesai.trim() || '12:00',
       statusTugas,
       waktuSelesaiActual: statusTugas === 'selesai' ? (report.waktuSelesaiActual || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })) : undefined,
       catatanHeader: catatanHeader.trim() || SHIFT_DEFINITIONS[targetShift].label,
-      title: `Laporan ${finalKendaraan} (${namaKereta.trim() || 'BIB/RGA'})`,
+      title: `Laporan ${finalKendaraan}${namaKereta.trim() ? ` (${namaKereta.trim()})` : ''}`,
     });
     onClose();
   };
@@ -312,13 +313,14 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
 
             {/* Tanggal Operasional */}
             <div>
-              <DatePickerInput
+              <DateSelectionBar
                 value={tanggal}
                 onChange={(newDate) => {
                   setTanggal(newDate);
                   if (errorMsg) setErrorMsg('');
                 }}
                 label="Tanggal Tugas Operasional *"
+                accent="indigo"
               />
             </div>
 

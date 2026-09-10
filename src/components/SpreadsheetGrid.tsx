@@ -32,6 +32,7 @@ interface SpreadsheetGridProps {
   onQuickAddRow: () => void;
   onOpenAddPassengerModal?: () => void;
   onOpenEditPassengerModal?: (row: ReportRow) => void;
+  onDeletePassenger?: (row: ReportRow) => void;
   onAddMultipleRows?: (count: number) => void;
   onClearEmptyRows: () => void;
   presets?: MasterPresets;
@@ -51,6 +52,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   onQuickAddRow,
   onOpenAddPassengerModal,
   onOpenEditPassengerModal,
+  onDeletePassenger,
   onAddMultipleRows,
   onClearEmptyRows,
   presets = defaultMasterPresets,
@@ -91,6 +93,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   // Delete row
   const handleDeleteRow = (index: number) => {
     if (isLocked && role === 'driver') return;
+    if (onDeletePassenger && rows[index] && (rows[index].nama.trim() || rows[index].hp.trim())) {
+      onDeletePassenger(rows[index]);
+      return;
+    }
     const updated = rows.filter((_, i) => i !== index);
     const renumbered = updated.map((r, i) => ({ ...r, no: i + 1 }));
     onChangeRows(renumbered);
