@@ -3,6 +3,7 @@ import {
   X, 
   Car, 
   User, 
+  Users,
   Train, 
   Check, 
   Trash2, 
@@ -471,6 +472,24 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({
                   placeholder="Plat Nomor"
                   className="px-3 py-2 text-xs sm:text-sm font-mono font-bold uppercase text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                 />
+              </div>
+
+              <div className="mt-2">
+                <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1 mb-1">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Jumlah Kursi Penumpang</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  step={1}
+                  value={kapasitas}
+                  onChange={(e) => setKapasitas(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
+                  placeholder="Contoh: 7"
+                  className="w-full px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Kapasitas otomatis mengikuti Master Kendaraan, tetapi dapat diubah manual untuk tugas ini.</p>
               </div>
             </div>
 
