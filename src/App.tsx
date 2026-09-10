@@ -402,49 +402,9 @@ export default function App() {
   }) => {
     const kapasitas = data.kapasitas || 7;
 
-    // Automatically transition waiting queued passengers to manifest rows if available for this date
-    const dateQueue = unassignedPassengers.filter((p) => p.tanggal === data.tanggal);
-
-    // Sort queue: passengers matching driver departure time first, then chronological
-    const sortedQueue = [...dateQueue].sort((a, b) => {
-      const aMatches = (data.jamMulai && a.jam === data.jamMulai) ? 1 : 0;
-      const bMatches = (data.jamMulai && b.jam === data.jamMulai) ? 1 : 0;
-      return bMatches - aMatches;
-    });
-
-    // Both Keberangkatan and Kedatangan have independent capacity up to kapasitas (e.g. 7 each)
-    const assignedKeberangkatan: UnassignedPassenger[] = [];
-    const assignedKedatangan: UnassignedPassenger[] = [];
-
-    for (const p of sortedQueue) {
-      const trip = p.tripType || 'keberangkatan';
-      if (trip === 'keberangkatan' && assignedKeberangkatan.length < kapasitas) {
-        assignedKeberangkatan.push(p);
-      } else if (trip === 'kedatangan' && assignedKedatangan.length < kapasitas) {
-        assignedKedatangan.push(p);
-      }
-    }
-
-    const autoAssigned = [...assignedKeberangkatan, ...assignedKedatangan];
-
-    const initialRows: ReportRow[] = autoAssigned.map((p, idx) => ({
-      id: 'pnp-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 6),
-      no: idx + 1,
-      nama: p.nama,
-      hp: p.hp,
-      antar: p.antar,
-      jemput: p.jemput,
-      jam: p.jam,
-      keterangan: p.keterangan,
-      tripType: p.tripType || 'keberangkatan',
-      tarif: p.tarif,
-      kehadiran: p.kehadiran || 'belum_datang',
-      status: p.status || 'proses',
-      bookingGroupId: p.bookingGroupId,
-      bookerName: p.bookerName,
-      totalSeatsInBooking: p.totalSeatsInBooking,
-      seatIndex: p.seatIndex,
-    }));
+    // Passenger assignment is intentionally manual. A new driver starts with an empty manifest;
+    // the admin chooses each passenger, driver, and schedule from the queue.
+    const initialRows: ReportRow[] = [];
 
     const newDoc: ReportDocument = {
       id: 'rep-' + Date.now(),
@@ -471,20 +431,8 @@ export default function App() {
     setActiveReportId(newDoc.id);
     saveReportToDatabase(newDoc).catch((err) => console.error(err));
 
-    // Remove auto-assigned passengers from unassigned pool and persist to Firestore
-    if (autoAssigned.length > 0) {
-      const assignedIds = new Set(autoAssigned.map((p) => p.id));
-      const remainingPool = unassignedPassengers.filter((p) => !assignedIds.has(p.id));
-      setUnassignedPassengers(remainingPool);
-      saveUnassignedPassengersToDatabase(remainingPool).catch(console.error);
-    }
-
     confetti({ particleCount: 45, spread: 65, origin: { y: 0.8 } });
-    if (autoAssigned.length > 0) {
-      showToast(`Driver ${data.driver} (${data.kendaraan}) ditugaskan! ${autoAssigned.length} penumpang dari antrean otomatis masuk daftar & tersimpan.`);
-    } else {
-      showToast(`Driver ${data.driver} (${data.kendaraan}${data.platNomor ? ` - ${data.platNomor}` : ''}) [${data.jamMulai || '05:00'}-${data.jamSelesai || '12:00'}] berhasil ditugaskan!`);
-    }
+    showToast(`Driver ${data.driver} (${data.kendaraan}${data.platNomor ? ` - ${data.platNomor}` : ''}) [${data.jamMulai || '05:00'}-${data.jamSelesai || '12:00'}] berhasil ditugaskan! Manifest masih kosong — pilih penumpang secara manual.`);
   };
 
   // Edit unassigned passenger in queue
@@ -1187,7 +1135,6 @@ export default function App() {
           reports={savedReports}
           currentDate={currentReport.tanggal}
           onAssignToDriver={handleAssignUnassignedToDriver}
-          onAutoAssignAll={handleAutoAssignAllUnassigned}
           onDeleteUnassigned={handleDeleteUnassigned}
           onEditUnassigned={handleEditUnassignedPassenger}
           onOpenAddDriver={(date, jam) => {
