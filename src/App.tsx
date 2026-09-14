@@ -706,7 +706,7 @@ export default function App() {
 
     let remainingPool = [...unassignedPassengers];
     let reportsMap = new Map<string, ReportDocument>();
-    savedReports.forEach((r) => reportsMap.set(r.id, { ...r, rows: [...r.rows] }));
+    (savedReports || []).forEach((r) => reportsMap.set(r.id, { ...r, rows: [...r.rows] }));
 
     let assignedCount = 0;
 
@@ -804,7 +804,7 @@ export default function App() {
 
       // Save to Firestore
       saveUnassignedPassengersToDatabase(remainingPool).catch(console.error);
-      updatedReportsArray.forEach((r) => saveReportToDatabase(r).catch(console.error));
+      (updatedReportsArray || []).forEach((r) => saveReportToDatabase(r).catch(console.error));
 
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
       showToast(`Berhasil menugaskan ${assignedCount} penumpang secara otomatis ke driver!`);
