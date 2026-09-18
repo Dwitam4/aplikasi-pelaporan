@@ -366,16 +366,27 @@ export const MasterPresetsModal: React.FC<MasterPresetsModalProps> = ({
                       <label className="text-[11px] font-bold text-indigo-900 mb-1 block">
                         Kapasitas Kursi (Default):
                       </label>
-                      <select
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        step={1}
+                        list="kapasitas-kursi-saran"
                         value={newDriverKapasitas}
-                        onChange={(e) => setNewDriverKapasitas(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (Number.isFinite(value)) setNewDriverKapasitas(Math.max(1, Math.min(99, value)));
+                        }}
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-800"
-                      >
-                        <option value={7}>7 Kursi (Luxio / Avanza)</option>
-                        <option value={8}>8 Kursi (Grandmax / APV)</option>
-                        <option value={14}>14 Kursi (HiAce Commuter)</option>
-                        <option value={10}>10 Kursi</option>
-                      </select>
+                        placeholder="Contoh: 7"
+                      />
+                      <datalist id="kapasitas-kursi-saran">
+                        <option value="7" label="Luxio / Avanza" />
+                        <option value="8" label="Grandmax / APV" />
+                        <option value="10" label="Kapasitas 10 kursi" />
+                        <option value="14" label="HiAce Commuter" />
+                      </datalist>
+                      <p className="text-[10px] text-indigo-700/70 mt-1">Bisa diketik manual, 1–99 kursi.</p>
                     </div>
                   </div>
 
