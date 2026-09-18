@@ -1,8 +1,11 @@
 import { ReportDocument, MasterPresets, UnassignedPassenger } from '../types';
 type Listener<T> = (value: T) => void;
 
+// API/database values can be malformed or legacy objects. Keep array consumers safe.
 const normalizePayload = <T>(url: string, value: unknown): T => {
-  if (url === '/api/reports' || url === '/api/unassigned') return (Array.isArray(value) ? value : []) as T;
+  if (url === '/api/reports' || url === '/api/unassigned') {
+    return (Array.isArray(value) ? value : []) as T;
+  }
   return value as T;
 };
 
@@ -20,16 +23,21 @@ const subscribe = <T>(url: string, onUpdate: Listener<T>, onError?: (error: Erro
   source.onmessage = event => {
     try {
       const message = JSON.parse(event.data);
-      if (url === '/api/reports' && (message.type === 'INIT' || message.type === 'SYNC_ALL')) onUpdate(normalizePayload<T>(url, message.payload));
+      if (url === '/api/reports' && (message.type === 'INIT' || message.type === 'SYNC_ALL')) {
+        onUpdate(normalizePayload<T>(url, message.payload));
+      }
       if (url === '/api/presets' && message.type === 'UPDATE_PRESETS') onUpdate(message.payload);
-      if (url === '/api/unassigned' && message.type === 'UPDATE_UNASSIGNED') onUpdate(normalizePayload<T>(url, message.payload));
-      if (url === '/api/reports' && (message.type === 'UPDATE_REPORT' || message.type === 'DELETE_REPORT')) request<T>(url).then(onUpdate);
+      if (url === '/api/unassigned' && message.type === 'UPDATE_UNASSIGNED') {
+        onUpdate(normalizePayload<T>(url, message.payload));
+      }
+      if (url === '/api/reports' && (message.type === 'UPDATE_REPORT' || message.type === 'DELETE_REPORT')) {
+        request<T>(url).then(onUpdate);
+      }
     } catch (err) { onError?.(err as Error); }
   };
-  source.onerror = () => {};
+  source.onerror = () => { /* the initial HTTP read remains available offline */ };
   return () => { closed = true; source.close(); };
 };
-
 export const subscribeToReports = (onUpdate: Listener<ReportDocument[]>, onError?: (error: Error) => void) => subscribe('/api/reports', onUpdate, onError);
 export const subscribeToMasterPresets = (onUpdate: Listener<MasterPresets>, onError?: (error: Error) => void) => subscribe('/api/presets', onUpdate, onError);
 export const subscribeToUnassignedPassengers = (onUpdate: Listener<UnassignedPassenger[]>, onError?: (error: Error) => void) => subscribe('/api/unassigned', onUpdate, onError);
