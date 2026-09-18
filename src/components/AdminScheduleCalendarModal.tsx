@@ -19,7 +19,7 @@ import {
   Filter,
   Trash2
 } from 'lucide-react';
-import { ReportDocument, UserRole } from '../types';
+import { ReportDocument, UnassignedPassenger, UserRole } from '../types';
 import { 
   formatIndonesianDate, 
   parseIndonesianDate, 
@@ -34,6 +34,7 @@ interface AdminScheduleCalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   reports: ReportDocument[];
+  unassignedPassengers: UnassignedPassenger[];
   activeReportId: string;
   onSelectReport: (reportId: string) => void;
   onOpenAddDriverModal: (targetDate: string) => void;
@@ -45,6 +46,7 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
   isOpen,
   onClose,
   reports,
+  unassignedPassengers,
   activeReportId,
   onSelectReport,
   onOpenAddDriverModal,
@@ -102,6 +104,7 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
 
   // Reports on the currently selected date
   const selectedDateReports = reportsByDateMap.get(selectedDateStr) || [];
+  const selectedDateUnassigned = unassignedPassengers.filter((p) => p.tanggal === selectedDateStr);
 
   // Filter selected date reports by search query if any
   const filteredDateReports = selectedDateReports.filter((rep) => {
@@ -116,6 +119,12 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
     );
   });
 
+  const filteredDateUnassigned = selectedDateUnassigned.filter((p) => {
+    if (!searchFilter.trim()) return true;
+    const q = searchFilter.toLowerCase();
+    return p.nama.toLowerCase().includes(q) || p.hp.includes(q) || p.jemput.toLowerCase().includes(q) || p.antar.toLowerCase().includes(q);
+  });
+
   // Total statistics for selected date
   const totalPassengersOnDate = selectedDateReports.reduce(
     (acc, r) => acc + getFilledRows(r.rows).length,
@@ -123,6 +132,7 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
   );
   const totalCompletedOnDate = selectedDateReports.filter((r) => r.statusTugas === 'selesai').length;
   const totalActiveOnDate = selectedDateReports.length - totalCompletedOnDate;
+  const totalQueuedOnDate = selectedDateUnassigned.length;
 
   // Year options for select dropdown
   const currentYear = new Date().getFullYear();
@@ -244,6 +254,7 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
                   const cellDateStr = formatIndonesianDate(cell.date);
                   const isSelected = cellDateStr === selectedDateStr;
                   const dayReports = reportsByDateMap.get(cellDateStr) || [];
+                  const dayQueueCount = unassignedPassengers.filter((p) => p.tanggal === cellDateStr).length;
                   const hasSchedules = dayReports.length > 0;
                   const isSunday = cell.date.getDay() === 0;
 
@@ -333,7 +344,16 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
                                 👥 {totalPnp} pnp
                               </div>
                             )}
+                            {dayQueueCount > 0 && (
+                              <div className={`text-[9px] font-bold px-1 truncate ${isSelected ? 'text-amber-100' : 'text-amber-700'}`}>
+                                ⏳ {dayQueueCount} antrian
+                              </div>
+                            )}
                           </>
+                        ) : dayQueueCount > 0 ? (
+                          <div className={`text-[9px] font-bold px-1 truncate ${isSelected ? 'text-amber-100' : 'text-amber-700'}`}>
+                            ⏳ {dayQueueCount} antrian
+                          </div>
                         ) : (
                           cell.isCurrentMonth && (
                             <span
@@ -397,6 +417,11 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
                   <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                     👥 Total: <strong>{totalPassengersOnDate} Penumpang</strong>
                   </span>
+                  {totalQueuedOnDate > 0 && (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                      ⏳ <strong>{totalQueuedOnDate} Dalam Antrian</strong>
+                    </span>
+                  )}
                   <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     🏁 {totalCompletedOnDate} Selesai
                   </span>
@@ -410,7 +435,7 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
             </div>
 
             {/* Search Filter input */}
-            {selectedDateReports.length > 2 && (
+            {(selectedDateReports.length > 2 || selectedDateUnassigned.length > 0) && (
               <div className="relative mb-3">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                 <input
@@ -581,7 +606,37 @@ export const AdminScheduleCalendarModal: React.FC<AdminScheduleCalendarModalProp
                     </div>
                   );
                 })
-              ) : (
+              ) : null}
+
+              {filteredDateUnassigned.length > 0 && (
+                <div className="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/60">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs sm:text-sm font-bold text-amber-950">Penumpang Masih Dalam Antrian</h5>
+                        <p className="text-[10px] text-amber-800">Belum mendapat driver untuk tanggal ini</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-200 text-amber-900">{filteredDateUnassigned.length} orang</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {filteredDateUnassigned.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/80 border border-amber-100">
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-800 truncate">{p.nama || 'Tanpa nama'}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{p.hp || 'Tanpa nomor'} • {p.jemput || '-'} → {p.antar || '-'}</div>
+                        </div>
+                        {p.jam && <span className="shrink-0 text-[10px] font-mono font-bold text-amber-800">{p.jam}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {filteredDateReports.length === 0 && filteredDateUnassigned.length === 0 && (
                 /* Empty state for selected date */
                 <div className="p-6 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 space-y-3 my-4">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
