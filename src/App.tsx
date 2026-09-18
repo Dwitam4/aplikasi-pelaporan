@@ -1423,6 +1423,7 @@ export default function App() {
         isOpen={isScheduleCalendarOpen}
         onClose={() => setIsScheduleCalendarOpen(false)}
         reports={savedReports}
+        unassignedPassengers={unassignedPassengers}
         activeReportId={activeReportId}
         onSelectReport={(reportId) => {
           setActiveReportId(reportId);
